@@ -1,3 +1,5 @@
+// Servicio de autenticación para manejar el login/logout con Google y mantener el estado del usuario en la aplicación.
+
 import { Injectable } from '@angular/core';
 import {
   GoogleAuthProvider,
