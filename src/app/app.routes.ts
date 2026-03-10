@@ -5,8 +5,12 @@ import { DashboardPageComponent } from './features/dashboard/pages/dashboard-pag
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'ahorro',
+    redirectTo: 'dashboard',
     pathMatch: 'full',
+  },
+  {
+    path: 'dashboard',
+    component: DashboardPageComponent,
   },
   {
     path: 'ahorro',
@@ -14,15 +18,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'ahorro',
-  },
-  {
-    path: 'dashboard',
-    component: DashboardPageComponent,
-  },
-  {
-    path: '',
     redirectTo: 'dashboard',
-    pathMatch: 'full',
   },
 ];
