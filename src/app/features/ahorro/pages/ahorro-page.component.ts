@@ -230,6 +230,41 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  async eliminarAhorro(ahorro: AhorroRecord): Promise<void> {
+    if (!ahorro.id) {
+      this.errorMessage = 'No se pudo identificar el ahorro a eliminar.';
+      return;
+    }
+
+    const confirmado = window.confirm(
+      `¿Seguro que deseas eliminar el ahorro "${ahorro.nombreAhorro}"?`,
+    );
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      this.loading = true;
+      this.successMessage = '';
+      this.errorMessage = '';
+
+      await this.ahorroService.eliminarAhorro(ahorro.id);
+
+      if (this.modoEdicion && this.ahorroEditandoId === ahorro.id) {
+        this.cancelarEdicion();
+      }
+
+      this.successMessage = 'Ahorro eliminado correctamente.';
+      await this.cargarAhorros();
+    } catch (error) {
+      console.error('Error al eliminar ahorro:', error);
+      this.errorMessage = 'Ocurrió un error al eliminar el ahorro.';
+    } finally {
+      this.loading = false;
+    }
+  }
+
   scrollAlFormulario(): void {
     if (this.formularioAhorro) {
       this.formularioAhorro.nativeElement.scrollIntoView({

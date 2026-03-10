@@ -5,6 +5,7 @@ import {
   addDoc,
   collection,
   doc,
+  deleteDoc,
   getDocs,
   orderBy,
   query,
@@ -55,5 +56,10 @@ export class AhorroService {
     await updateDoc(ahorroDocRef, {
       ...ahorro,
     });
+  }
+
+  async eliminarAhorro(id: string): Promise<void> {
+    const ahorroDocRef = doc(db, this.collectionName, id);
+    await deleteDoc(ahorroDocRef);
   }
 }
