@@ -4,8 +4,17 @@ import { DashboardPageComponent } from './features/dashboard/pages/dashboard-pag
 
 export const routes: Routes = [
   {
+    path: '',
+    redirectTo: 'ahorro',
+    pathMatch: 'full',
+  },
+  {
     path: 'ahorro',
     component: AhorroPageComponent,
+  },
+  {
+    path: '**',
+    redirectTo: 'ahorro',
   },
   {
     path: 'dashboard',
