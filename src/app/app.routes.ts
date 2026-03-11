@@ -13,9 +13,11 @@ export const routes: Routes = [
     component: DashboardPageComponent,
   },
   {
-    path: 'ahorro',
+    path: 'ahorros',
     component: AhorroPageComponent,
   },
+
+  //Cualquier ruta que Angular no reconozca → envíala a /dashboard
   {
     path: '**',
     redirectTo: 'dashboard',

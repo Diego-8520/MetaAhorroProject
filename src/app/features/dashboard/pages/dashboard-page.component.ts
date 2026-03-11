@@ -2,14 +2,43 @@ import { Component, OnDestroy, OnInit, inject, NgZone, ChangeDetectorRef } from 
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 
+import {
+  Chart,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  LineController,
+  BarController,
+} from 'chart.js';
+
+import { BaseChartDirective } from 'ng2-charts';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { AhorroService } from '../../../core/services/ahorro.service';
 import { AhorroRecord } from '../../../core/models/ahorro-record.model';
 
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  LineController,
+  BarController,
+);
+
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BaseChartDirective],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.css',
 })
@@ -34,6 +63,64 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   ultimoRegistro = 'Sin registros';
 
   ahorros: AhorroRecord[] = [];
+
+  // GRÁFICA DE LÍNEA
+  lineChartLabels: string[] = [];
+  lineChartData = [
+    {
+      data: [] as number[],
+      label: '',
+      fill: false,
+      tension: 0.3,
+      borderColor: '',
+      backgroundColor: '',
+    },
+    {
+      data: [] as number[],
+      label: '',
+      fill: false,
+      tension: 0.3,
+      borderColor: '',
+      backgroundColor: '',
+    },
+  ];
+
+  lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+      },
+    },
+  };
+
+  lineChartType: 'line' = 'line';
+
+  // GRÁFICA DE BARRAS
+  barChartLabels: string[] = [];
+  barChartData = [
+    {
+      data: [] as number[],
+      label: '',
+      backgroundColor: '',
+    },
+    {
+      data: [] as number[],
+      label: '',
+      backgroundColor: '',
+    },
+  ];
+
+  barChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+      },
+    },
+  };
+
+  barChartType: 'bar' = 'bar';
 
   ngOnInit(): void {
     const authInitSub = this.authService.authInitialized$.subscribe(async (initialized) => {
@@ -73,6 +160,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
               this.ultimoRegistro = createdAt.toDate().toLocaleString('es-CO');
             }
           }
+
+          this.prepararGraficas();
         } catch (error) {
           console.error('Error al cargar dashboard:', error);
           this.errorMessage = 'No fue posible cargar la información de la dashboard.';
@@ -84,6 +173,50 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.add(authInitSub);
+  }
+
+  prepararGraficas(): void {
+    const ahorrosOrdenados = [...this.ahorros].reverse();
+
+    this.lineChartLabels = ahorrosOrdenados.map(
+      (item, index) => item.nombreAhorro || `Registro ${index + 1}`,
+    );
+
+    this.lineChartData = [
+      {
+        data: ahorrosOrdenados.map((item) => item.meta),
+        label: 'Meta',
+        fill: false,
+        tension: 0.3,
+        borderColor: 'red',
+        backgroundColor: 'red',
+      },
+      {
+        data: ahorrosOrdenados.map((item) => item.ahorroTotal),
+        label: 'Estado actual',
+        fill: false,
+        tension: 0.3,
+        borderColor: 'blue',
+        backgroundColor: 'blue',
+      },
+    ];
+
+    this.barChartLabels = ahorrosOrdenados.map(
+      (item, index) => item.nombreAhorro || `Registro ${index + 1}`,
+    );
+
+    this.barChartData = [
+      {
+        data: ahorrosOrdenados.map((item) => item.meta),
+        label: 'Meta',
+        backgroundColor: 'red',
+      },
+      {
+        data: ahorrosOrdenados.map((item) => item.ahorroTotal),
+        label: 'Estado actual',
+        backgroundColor: 'blue',
+      },
+    ];
   }
 
   ngOnDestroy(): void {

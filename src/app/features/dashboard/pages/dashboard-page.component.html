@@ -39,13 +39,51 @@
       </div>
     </div>
 
-    <div class="card shadow-sm mt-4">
-      <div class="card-body">
-        <h5 class="card-title">Próximo paso</h5>
-        <p class="mb-0">
-          Aquí después vamos a agregar las dos gráficas del proyecto.
-        </p>
+    @if (ahorros.length > 0) {
+      <div class="row g-4 mt-1">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Gráfica de línea: Meta vs ahorro proyectado</h5>
+              <canvas
+                baseChart
+                [data]="{
+                  labels: lineChartLabels,
+                  datasets: lineChartData
+                }"
+                [options]="lineChartOptions"
+                [type]="lineChartType">
+              </canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Gráfica de barras: ahorro vs meta</h5>
+              <canvas
+                baseChart
+                [data]="{
+                  labels: barChartLabels,
+                  datasets: barChartData
+                }"
+                [options]="barChartOptions"
+                [type]="barChartType">
+              </canvas>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    } @else {
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <h5 class="card-title">Gráficas</h5>
+          <p class="mb-0">
+            Aún no hay datos suficientes para mostrar gráficas.
+          </p>
+        </div>
+      </div>
+    }
   }
 </div>
