@@ -20,10 +20,7 @@ import { BaseChartDirective } from 'ng2-charts';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { AhorroService } from '../../../core/services/ahorro.service';
-<<<<<<< HEAD
 import { InflationService, InflationRecord } from '../../../core/services/inflation.service';
-=======
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
 import { AhorroRecord } from '../../../core/models/ahorro-record.model';
 
 Chart.register(
@@ -49,10 +46,7 @@ Chart.register(
 export class DashboardPageComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private ahorroService = inject(AhorroService);
-<<<<<<< HEAD
   private inflationService = inject(InflationService);
-=======
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
 
@@ -70,21 +64,18 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   metasPendientes = 0;
   ultimoRegistro = 'Sin registros';
 
-  ahorros: AhorroRecord[] = [];
+ahorros: AhorroRecord[] = [];
 
-<<<<<<< HEAD
-  inflationLoading = false;
-  inflationError = '';
-  inflationYear = '';
-  inflationValue = 0;
-  valorRealEstimado = 0;
-  perdidaPoderAdquisitivo = 0;
+inflationLoading = false;
+inflationError = '';
+inflationYear = '';
+inflationValue = 0;
+valorRealEstimado = 0;
+perdidaPoderAdquisitivo = 0;
 
-  inflationHistory: InflationRecord[] = [];
+inflationHistory: InflationRecord[] = [];
 
-=======
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
-  // GRÁFICA DE LÍNEA
+// GRÁFICA DE LÍNEA
   lineChartLabels: string[] = [];
   lineChartData = [
     {
@@ -140,39 +131,34 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     },
   };
 
-  barChartType: 'bar' = 'bar';
+barChartType: 'bar' = 'bar';
 
-<<<<<<< HEAD
-  // GRÁFICA DE INFLACIÓN
-  inflationChartLabels: string[] = [];
-  inflationChartData = [
-    {
-      data: [] as number[],
-      label: 'Inflación anual en Colombia (%)',
-      fill: false,
-      tension: 0.3,
-      borderColor: 'green',
-      backgroundColor: 'green',
+// GRÁFICA DE INFLACIÓN
+inflationChartLabels: string[] = [];
+inflationChartData = [
+  {
+    data: [] as number[],
+    label: 'Inflación anual en Colombia (%)',
+    fill: false,
+    tension: 0.3,
+    borderColor: 'green',
+    backgroundColor: 'green',
+  },
+];
+
+inflationChartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      display: true,
     },
-  ];
+  },
+};
 
-  inflationChartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        display: true,
-      },
-    },
-  };
+inflationChartType: 'line' = 'line';
 
-  inflationChartType: 'line' = 'line';
-
-  ngOnInit(): void {
-    this.cargarInflacion();
-
-=======
-  ngOnInit(): void {
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
+ngOnInit(): void {
+  this.cargarInflacion();
     const authInitSub = this.authService.authInitialized$.subscribe(async (initialized) => {
       this.ngZone.run(async () => {
         if (!initialized) {
@@ -203,26 +189,16 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           this.metasCumplidas = this.ahorros.filter((item) => item.cumplioMeta).length;
           this.metasPendientes = this.ahorros.filter((item) => !item.cumplioMeta).length;
 
-          if (this.ahorros.length > 0) {
-<<<<<<< HEAD
-            const createdAt = this.ahorros[0].createdAt;
+if (this.ahorros.length > 0) {
+  const createdAt = this.ahorros[0].createdAt;
 
-            if (createdAt) {
-              this.ultimoRegistro = new Date(String(createdAt)).toLocaleString('es-CO');
-=======
-            const createdAt = this.ahorros[0].createdAt as any;
+  if (createdAt) {
+    this.ultimoRegistro = new Date(String(createdAt)).toLocaleString('es-CO');
+  }
+}
 
-            if (createdAt?.toDate) {
-              this.ultimoRegistro = createdAt.toDate().toLocaleString('es-CO');
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
-            }
-          }
-
-          this.prepararGraficas();
-<<<<<<< HEAD
-          this.calcularImpactoInflacion();
-=======
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
+this.prepararGraficas();
+this.calcularImpactoInflacion();
         } catch (error) {
           console.error('Error al cargar dashboard:', error);
           this.errorMessage = 'No fue posible cargar la información de la dashboard.';
@@ -233,55 +209,52 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
       });
     });
 
-    this.subscriptions.add(authInitSub);
+  this.subscriptions.add(authInitSub);
+}
+
+cargarInflacion(): void {
+  this.inflationLoading = true;
+  this.inflationError = '';
+
+  const inflationSub = this.inflationService.getInflationData().subscribe({
+    next: (records) => {
+      this.inflationHistory = records;
+
+      if (records.length > 0) {
+        const latest = records[records.length - 1];
+        this.inflationYear = latest.year;
+        this.inflationValue = latest.value;
+      }
+
+      this.prepararGraficaInflacion();
+      this.calcularImpactoInflacion();
+
+      this.inflationLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: (error) => {
+      console.error('Error al consultar inflación:', error);
+      this.inflationError = 'No fue posible consultar la inflación de Colombia.';
+      this.inflationLoading = false;
+      this.cdr.detectChanges();
+    },
+  });
+
+  this.subscriptions.add(inflationSub);
+}
+
+calcularImpactoInflacion(): void {
+  if (this.totalAhorrado <= 0 || this.inflationValue <= 0) {
+    this.valorRealEstimado = this.totalAhorrado;
+    this.perdidaPoderAdquisitivo = 0;
+    return;
   }
 
-<<<<<<< HEAD
-  cargarInflacion(): void {
-    this.inflationLoading = true;
-    this.inflationError = '';
+  this.valorRealEstimado = this.totalAhorrado / (1 + this.inflationValue / 100);
+  this.perdidaPoderAdquisitivo = this.totalAhorrado - this.valorRealEstimado;
+}
 
-    const inflationSub = this.inflationService.getInflationData().subscribe({
-      next: (records) => {
-        this.inflationHistory = records;
-
-        if (records.length > 0) {
-          const latest = records[records.length - 1];
-          this.inflationYear = latest.year;
-          this.inflationValue = latest.value;
-        }
-
-        this.prepararGraficaInflacion();
-        this.calcularImpactoInflacion();
-
-        this.inflationLoading = false;
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        console.error('Error al consultar inflación:', error);
-        this.inflationError = 'No fue posible consultar la inflación de Colombia.';
-        this.inflationLoading = false;
-        this.cdr.detectChanges();
-      },
-    });
-
-    this.subscriptions.add(inflationSub);
-  }
-
-  calcularImpactoInflacion(): void {
-    if (this.totalAhorrado <= 0 || this.inflationValue <= 0) {
-      this.valorRealEstimado = this.totalAhorrado;
-      this.perdidaPoderAdquisitivo = 0;
-      return;
-    }
-
-    this.valorRealEstimado = this.totalAhorrado / (1 + this.inflationValue / 100);
-    this.perdidaPoderAdquisitivo = this.totalAhorrado - this.valorRealEstimado;
-  }
-
-=======
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
-  prepararGraficas(): void {
+prepararGraficas(): void {
     const ahorrosOrdenados = [...this.ahorros].reverse();
 
     this.lineChartLabels = ahorrosOrdenados.map(
@@ -325,7 +298,6 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     ];
   }
 
-<<<<<<< HEAD
   prepararGraficaInflacion(): void {
     this.inflationChartLabels = this.inflationHistory.map((item) => item.year);
 
@@ -345,9 +317,3 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 }
-=======
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-  }
-}
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
