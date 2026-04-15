@@ -114,6 +114,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
 
       if (this.modoEdicion && this.ahorroEditandoId) {
         await this.ahorroService.actualizarAhorro(this.ahorroEditandoId, {
+<<<<<<< HEAD
         uid: user.uid,
         displayName: user.displayName ?? 'Sin nombre',
         email: user.email ?? 'Sin correo',
@@ -126,6 +127,18 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
         cumplioMeta,
         diferenciaMeta,
       });
+=======
+          nombreAhorro,
+          descripcionAhorro,
+          ahorroMensual,
+          meses,
+          meta,
+          ahorroTotal,
+          cumplioMeta,
+          diferenciaMeta,
+        });
+
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
         this.ngZone.run(() => {
           this.successMessage = 'Ahorro actualizado correctamente.';
         });
@@ -251,6 +264,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       this.successMessage = '';
       this.errorMessage = '';
 
+<<<<<<< HEAD
       const user = this.authService.currentUser;
 
 if (!user) {
@@ -259,6 +273,9 @@ if (!user) {
 }
 
 await this.ahorroService.eliminarAhorro(ahorro.id, user.uid);
+=======
+      await this.ahorroService.eliminarAhorro(ahorro.id);
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
 
       if (this.modoEdicion && this.ahorroEditandoId === ahorro.id) {
         this.cancelarEdicion();

@@ -20,7 +20,10 @@ import { BaseChartDirective } from 'ng2-charts';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { AhorroService } from '../../../core/services/ahorro.service';
+<<<<<<< HEAD
 import { InflationService, InflationRecord } from '../../../core/services/inflation.service';
+=======
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
 import { AhorroRecord } from '../../../core/models/ahorro-record.model';
 
 Chart.register(
@@ -46,7 +49,10 @@ Chart.register(
 export class DashboardPageComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private ahorroService = inject(AhorroService);
+<<<<<<< HEAD
   private inflationService = inject(InflationService);
+=======
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
   private ngZone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
 
@@ -66,6 +72,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   ahorros: AhorroRecord[] = [];
 
+<<<<<<< HEAD
   inflationLoading = false;
   inflationError = '';
   inflationYear = '';
@@ -75,6 +82,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   inflationHistory: InflationRecord[] = [];
 
+=======
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
   // GRÁFICA DE LÍNEA
   lineChartLabels: string[] = [];
   lineChartData = [
@@ -133,6 +142,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
 
   barChartType: 'bar' = 'bar';
 
+<<<<<<< HEAD
   // GRÁFICA DE INFLACIÓN
   inflationChartLabels: string[] = [];
   inflationChartData = [
@@ -160,6 +170,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarInflacion();
 
+=======
+  ngOnInit(): void {
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
     const authInitSub = this.authService.authInitialized$.subscribe(async (initialized) => {
       this.ngZone.run(async () => {
         if (!initialized) {
@@ -191,15 +204,25 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
           this.metasPendientes = this.ahorros.filter((item) => !item.cumplioMeta).length;
 
           if (this.ahorros.length > 0) {
+<<<<<<< HEAD
             const createdAt = this.ahorros[0].createdAt;
 
             if (createdAt) {
               this.ultimoRegistro = new Date(String(createdAt)).toLocaleString('es-CO');
+=======
+            const createdAt = this.ahorros[0].createdAt as any;
+
+            if (createdAt?.toDate) {
+              this.ultimoRegistro = createdAt.toDate().toLocaleString('es-CO');
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
             }
           }
 
           this.prepararGraficas();
+<<<<<<< HEAD
           this.calcularImpactoInflacion();
+=======
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
         } catch (error) {
           console.error('Error al cargar dashboard:', error);
           this.errorMessage = 'No fue posible cargar la información de la dashboard.';
@@ -213,6 +236,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.subscriptions.add(authInitSub);
   }
 
+<<<<<<< HEAD
   cargarInflacion(): void {
     this.inflationLoading = true;
     this.inflationError = '';
@@ -255,6 +279,8 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.perdidaPoderAdquisitivo = this.totalAhorrado - this.valorRealEstimado;
   }
 
+=======
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
   prepararGraficas(): void {
     const ahorrosOrdenados = [...this.ahorros].reverse();
 
@@ -299,6 +325,7 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     ];
   }
 
+<<<<<<< HEAD
   prepararGraficaInflacion(): void {
     this.inflationChartLabels = this.inflationHistory.map((item) => item.year);
 
@@ -318,3 +345,9 @@ export class DashboardPageComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 }
+=======
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+}
+>>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
