@@ -1,3 +1,5 @@
+//Credenciales para acceder a la base de datos
+
 export const environment = {
   firebaseConfig: {
     apiKey: 'AIzaSyA_Fp1k1ho5NWvPhs1riVzGLrUh83Tw0ME',

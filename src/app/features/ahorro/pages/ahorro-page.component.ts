@@ -21,6 +21,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private ahorroService = inject(AhorroService);
   private ngZone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
 
   private subscriptions = new Subscription();
 
@@ -75,8 +76,6 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  private cdr = inject(ChangeDetectorRef);
-
   async onSubmit(): Promise<void> {
     this.ngZone.run(() => {
       this.successMessage = '';
@@ -114,20 +113,9 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
 
       if (this.modoEdicion && this.ahorroEditandoId) {
         await this.ahorroService.actualizarAhorro(this.ahorroEditandoId, {
-<<<<<<< HEAD
-        uid: user.uid,
-        displayName: user.displayName ?? 'Sin nombre',
-        email: user.email ?? 'Sin correo',
-        nombreAhorro,
-        descripcionAhorro,
-        ahorroMensual,
-        meses,
-        meta,
-        ahorroTotal,
-        cumplioMeta,
-        diferenciaMeta,
-      });
-=======
+          uid: user.uid,
+          displayName: user.displayName ?? 'Sin nombre',
+          email: user.email ?? 'Sin correo',
           nombreAhorro,
           descripcionAhorro,
           ahorroMensual,
@@ -138,7 +126,6 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
           diferenciaMeta,
         });
 
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
         this.ngZone.run(() => {
           this.successMessage = 'Ahorro actualizado correctamente.';
         });
@@ -200,7 +187,6 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
 
       const ahorros = await this.ahorroService.obtenerAhorrosPorUsuario(user.uid);
-
       this.ahorros = ahorros;
     } catch (error) {
       console.error('Error al cargar ahorros:', error);
@@ -264,18 +250,14 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       this.successMessage = '';
       this.errorMessage = '';
 
-<<<<<<< HEAD
       const user = this.authService.currentUser;
 
-if (!user) {
-  this.errorMessage = 'Debes iniciar sesión.';
-  return;
-}
+      if (!user) {
+        this.errorMessage = 'Debes iniciar sesión.';
+        return;
+      }
 
-await this.ahorroService.eliminarAhorro(ahorro.id, user.uid);
-=======
-      await this.ahorroService.eliminarAhorro(ahorro.id);
->>>>>>> 42c540de330652ec431f9e2b396f53f98c7f2525
+      await this.ahorroService.eliminarAhorro(ahorro.id, user.uid);
 
       if (this.modoEdicion && this.ahorroEditandoId === ahorro.id) {
         this.cancelarEdicion();
