@@ -1,71 +1,48 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-import { AhorroRecord } from '../models/ahorro-record.model';
 
-interface ApiResponse<T> {
-  ok: boolean;
-  message?: string;
-  data: T;
-}
+import { AhorroRecord } from '../models/ahorro-record.model';
+import { MysqlAhorroService } from './mysql-ahorro.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AhorroService {
-  private http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost/metaahorro-api';
+  private readonly mysqlAhorroService = inject(MysqlAhorroService);
+
+  readonly ahorroActualizado$ = this.mysqlAhorroService.ahorroActualizado$;
 
   async crearAhorro(ahorro: Omit<AhorroRecord, 'id' | 'createdAt'>): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.post<{ ok: boolean; message?: string }>(`${this.apiUrl}/crear_ahorro.php`, ahorro),
-    );
-
-    if (!response.ok) {
-      throw new Error(response.message || 'No se pudo crear el ahorro');
-    }
+    await this.mysqlAhorroService.crearAhorro({
+      ...ahorro,
+      id: undefined,
+    });
   }
 
   async obtenerAhorrosPorUsuario(uid: string): Promise<AhorroRecord[]> {
-    const response = await firstValueFrom(
-      this.http.get<ApiResponse<AhorroRecord[]>>(
-        `${this.apiUrl}/listar_ahorros.php?uid=${encodeURIComponent(uid)}`,
-      ),
-    );
+    const ahorros = await this.mysqlAhorroService.obtenerAhorros(uid);
 
-    if (!response.ok) {
-      throw new Error(response.message || 'No se pudieron obtener los ahorros');
-    }
-
-    return response.data ?? [];
+    return ahorros.map((ahorro) => ({
+      ...ahorro,
+      id: ahorro.id?.toString(),
+      createdAt: ahorro.createdAt ?? null,
+    }));
   }
 
   async actualizarAhorro(
     id: string,
     ahorro: Omit<AhorroRecord, 'id' | 'createdAt'>,
   ): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.post<{ ok: boolean; message?: string }>(`${this.apiUrl}/actualizar_ahorro.php`, {
-        id,
-        ...ahorro,
-      }),
-    );
-
-    if (!response.ok) {
-      throw new Error(response.message || 'No se pudo actualizar el ahorro');
-    }
+    await this.mysqlAhorroService.actualizarAhorro({
+      ...ahorro,
+      id: Number(id),
+    });
   }
 
-  async eliminarAhorro(id: string, uid: string): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.post<{ ok: boolean; message?: string }>(`${this.apiUrl}/eliminar_ahorro.php`, {
-        id,
-        uid,
-      }),
-    );
-
-    if (!response.ok) {
-      throw new Error(response.message || 'No se pudo eliminar el ahorro');
+  async eliminarAhorro(id: string, uid = ''): Promise<void> {
+    if (!uid) {
+      throw new Error('Se requiere uid para eliminar un ahorro en MySQL.');
     }
+
+    await this.mysqlAhorroService.eliminarAhorro(Number(id), uid);
   }
 }

@@ -1,157 +1,71 @@
 <div class="container py-4">
-  <h2 class="mb-4">Dashboard</h2>
+  <h2 class="mb-4">Dashboard de ahorros</h2>
 
   @if (loading) {
-    <div class="alert alert-info">
-      Cargando dashboard...
-    </div>
-  }
-
-  @if (errorMessage) {
-    <div class="alert alert-danger">
-      {{ errorMessage }}
-    </div>
-  }
-
-  @if (!loading && !errorMessage) {
-    <div class="row g-3">
-      <div class="col-12 col-md-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">Usuario</h5>
-            <p class="mb-1"><strong>Nombre:</strong> {{ userName }}</p>
-            <p class="mb-1"><strong>Correo:</strong> {{ userEmail }}</p>
-            <p class="mb-0"><strong>Último registro:</strong> {{ ultimoRegistro }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">Resumen</h5>
-            <p class="mb-1"><strong>Total de registros:</strong> {{ totalRegistros }}</p>
-            <p class="mb-1"><strong>Total ahorrado:</strong> {{ totalAhorrado | number:'1.0-0' }}</p>
-            <p class="mb-1"><strong>Metas cumplidas:</strong> {{ metasCumplidas }}</p>
-            <p class="mb-0"><strong>Metas pendientes:</strong> {{ metasPendientes }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mt-1">
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">Inflación actual</h5>
-
-            @if (inflationLoading) {
-              <p class="mb-0">Cargando inflación...</p>
-            } @else if (inflationError) {
-              <p class="mb-0 text-danger">{{ inflationError }}</p>
-            } @else {
-              <p class="mb-1"><strong>Año:</strong> {{ inflationYear }}</p>
-              <p class="mb-0"><strong>Inflación:</strong> {{ inflationValue | number:'1.2-2' }} %</p>
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">Valor real estimado</h5>
-            <p class="mb-1">
-              <strong>Total ahorrado:</strong> {{ totalAhorrado | number:'1.0-0' }}
-            </p>
-            <p class="mb-0">
-              <strong>Ajustado por inflación:</strong> {{ valorRealEstimado | number:'1.0-0' }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-body">
-            <h5 class="card-title">Pérdida estimada</h5>
-            <p class="mb-0">
-              <strong>Poder adquisitivo perdido:</strong>
-              {{ perdidaPoderAdquisitivo | number:'1.0-0' }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    @if (ahorros.length > 0) {
-      <div class="row g-4 mt-1">
-        <div class="col-12">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">Gráfica de línea: Meta vs ahorro proyectado</h5>
-              <canvas
-                baseChart
-                [data]="{
-                  labels: lineChartLabels,
-                  datasets: lineChartData
-                }"
-                [options]="lineChartOptions"
-                [type]="lineChartType">
-              </canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-12">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">Gráfica de barras: ahorro vs meta</h5>
-              <canvas
-                baseChart
-                [data]="{
-                  labels: barChartLabels,
-                  datasets: barChartData
-                }"
-                [options]="barChartOptions"
-                [type]="barChartType">
-              </canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    } @else {
-      <div class="card shadow-sm mt-4">
-        <div class="card-body">
-          <h5 class="card-title">Gráficas de ahorros</h5>
-          <p class="mb-0">
-            Aún no hay datos suficientes para mostrar las gráficas de tus ahorros.
-          </p>
-        </div>
-      </div>
-    }
-
-    <div class="row g-4 mt-1">
-      <div class="col-12">
+    <p>Cargando dashboard...</p>
+  } @else if (errorMessage) {
+    <div class="alert alert-danger">{{ errorMessage }}</div>
+  } @else {
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title">Gráfica de línea: inflación anual en Colombia</h5>
+            <h5>Total registros</h5>
+            <p class="fs-4 mb-0">{{ totalRegistros }}</p>
+          </div>
+        </div>
+      </div>
 
-            @if (inflationLoading) {
-              <p class="mb-0">Cargando gráfica de inflación...</p>
-            } @else if (inflationError) {
-              <p class="mb-0 text-danger">{{ inflationError }}</p>
-            } @else {
-              <canvas
-                baseChart
-                [data]="{
-                  labels: inflationChartLabels,
-                  datasets: inflationChartData
-                }"
-                [options]="inflationChartOptions"
-                [type]="inflationChartType">
-              </canvas>
-            }
+      <div class="col-md-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Total ahorrado</h5>
+            <p class="fs-4 mb-0">{{ totalAhorrado | number:'1.0-0' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Metas cumplidas</h5>
+            <p class="fs-4 mb-0">{{ metasCumplidas }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5>Ultimo registro</h5>
+            <p class="mb-0">
+              {{ ultimoRegistro ? (ultimoRegistro | date:'medium') : 'Sin registros' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h4 class="mb-3">Ahorro total vs meta</h4>
+            <canvas baseChart [data]="barChartData" [type]="barChartType"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h4 class="mb-3">Estado de metas</h4>
+            <canvas baseChart [data]="pieChartData" [type]="pieChartType"></canvas>
+
+            <div class="mt-3">
+              <p class="mb-1"><strong>Metas cumplidas:</strong> {{ metasCumplidas }}</p>
+              <p class="mb-0"><strong>Metas pendientes:</strong> {{ metasPendientes }}</p>
+            </div>
           </div>
         </div>
       </div>
