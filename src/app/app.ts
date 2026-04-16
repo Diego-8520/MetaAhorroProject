@@ -1,9 +1,11 @@
-import { Component, inject, NgZone, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { Subscription } from 'rxjs';
+
 import { AuthService } from './core/services/auth.service';
+import { MysqlAhorroService } from './core/services/mysql-ahorro.service';
 import { ExchangeService } from './services/exchange.service';
-import { AhorroService } from './core/services/ahorro.service';
 
 @Component({
   selector: 'app-root',
@@ -11,35 +13,25 @@ import { AhorroService } from './core/services/ahorro.service';
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
-export class App {
-  private authService = inject(AuthService);
-  private exchange = inject(ExchangeService);
-  private ahorroService = inject(AhorroService);
-  private ngZone = inject(NgZone);
-  private cdr = inject(ChangeDetectorRef);
+export class App implements OnInit, OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly mysqlAhorroService = inject(MysqlAhorroService);
+  private readonly exchange = inject(ExchangeService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly subscriptions = new Subscription();
 
-  user$ = this.authService.user$;
+  readonly user$ = this.authService.user$;
 
-  ahorros: any[] = [];
   totalAhorro = 0;
   totalAhorroUSD: number | null = null;
-
-  monedas: any = null;
   tasaCOP: number | null = null;
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.cargarDolar();
 
-    this.authService.authInitialized$.subscribe(async (initialized) => {
-      this.ngZone.run(async () => {
-        if (!initialized) {
-          return;
-        }
-
-        const user = this.authService.currentUser;
-
+    this.subscriptions.add(
+      this.authService.user$.subscribe(async (user) => {
         if (!user) {
-          this.ahorros = [];
           this.totalAhorro = 0;
           this.totalAhorroUSD = null;
           this.cdr.detectChanges();
@@ -47,71 +39,69 @@ export class App {
         }
 
         await this.cargarResumen(user.uid);
-      });
-    });
+      }),
+    );
+
+    this.subscriptions.add(
+      this.mysqlAhorroService.ahorroActualizado$.subscribe(async () => {
+        const user = this.authService.currentUser;
+
+        if (user) {
+          await this.cargarResumen(user.uid);
+        }
+      }),
+    );
   }
 
-  async cargarResumen(uid: string) {
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  async cargarResumen(uid: string): Promise<void> {
     try {
-      const datos = await this.ahorroService.obtenerAhorrosPorUsuario(uid);
-
-      this.ngZone.run(() => {
-        this.ahorros = datos;
-
-        this.totalAhorro = this.ahorros.reduce((total, a) => {
-          return total + Number(a.ahorroTotal || 0);
-        }, 0);
-
-        this.calcularConversion();
-        this.cdr.detectChanges();
-      });
+      const reporte = await this.mysqlAhorroService.obtenerReporteDashboard(uid);
+      this.totalAhorro = Number(reporte.resumen.total_ahorrado || 0);
+      this.calcularConversion();
     } catch (error) {
-      console.error('Error al cargar resumen:', error);
-
-      this.ngZone.run(() => {
-        this.ahorros = [];
-        this.totalAhorro = 0;
-        this.totalAhorroUSD = null;
-        this.cdr.detectChanges();
-      });
+      console.error('Error al cargar resumen principal:', error);
+      this.totalAhorro = 0;
+      this.totalAhorroUSD = null;
+    } finally {
+      this.cdr.detectChanges();
     }
   }
 
-  cargarDolar() {
+  cargarDolar(): void {
     this.exchange.getMoneda().subscribe({
       next: (data: any) => {
-        this.ngZone.run(() => {
-          this.monedas = data;
-          this.tasaCOP = data?.rates?.COP ?? null;
-          this.calcularConversion();
-          this.cdr.detectChanges();
-        });
+        this.tasaCOP = data?.rates?.COP ?? null;
+        this.calcularConversion();
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error al obtener moneda:', error);
-      }
+      },
     });
   }
 
-  calcularConversion() {
-    if (this.tasaCOP !== null) {
-      this.totalAhorroUSD = this.totalAhorro / this.tasaCOP;
-    }
+  calcularConversion(): void {
+    this.totalAhorroUSD =
+      this.tasaCOP && this.tasaCOP > 0 ? this.totalAhorro / this.tasaCOP : null;
   }
 
-  async login() {
+  async login(): Promise<void> {
     try {
       await this.authService.loginWithGoogle();
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
+      console.error('Error al iniciar sesion:', error);
     }
   }
 
-  async logout() {
+  async logout(): Promise<void> {
     try {
       await this.authService.logout();
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('Error al cerrar sesion:', error);
     }
   }
 }

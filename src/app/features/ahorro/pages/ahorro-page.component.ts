@@ -1,10 +1,21 @@
-import { Component, OnDestroy, OnInit, inject, NgZone, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
-import { MysqlAhorroService, AhorroMysql } from '../../../core/services/mysql-ahorro.service';
+import {
+  AhorroRecordMysql,
+  MysqlAhorroService,
+} from '../../../core/services/mysql-ahorro.service';
 
 @Component({
   selector: 'app-ahorro-page',
@@ -14,13 +25,11 @@ import { MysqlAhorroService, AhorroMysql } from '../../../core/services/mysql-ah
   styleUrl: './ahorro-page.component.css',
 })
 export class AhorroPageComponent implements OnInit, OnDestroy {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
-  private mysqlAhorroService = inject(MysqlAhorroService);
-  private ngZone = inject(NgZone);
-  private cdr = inject(ChangeDetectorRef);
-
-  private subscriptions = new Subscription();
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly mysqlAhorroService = inject(MysqlAhorroService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly subscriptions = new Subscription();
 
   @ViewChild('formularioAhorro')
   formularioAhorro!: ElementRef;
@@ -28,33 +37,23 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
   modoEdicion = false;
   ahorroEditandoId: number | null = null;
 
-  ahorroForm!: FormGroup;
+  ahorroForm: FormGroup = this.fb.group({
+    nombreAhorro: ['', [Validators.required, Validators.minLength(3)]],
+    descripcionAhorro: ['', [Validators.required, Validators.minLength(5)]],
+    ahorroMensual: [null, [Validators.required, Validators.min(1)]],
+    meses: [null, [Validators.required, Validators.min(1)]],
+    meta: [null, [Validators.required, Validators.min(1)]],
+  });
+
   loading = false;
   loadingAhorros = true;
   successMessage = '';
   errorMessage = '';
-
-  ahorros: AhorroMysql[] = [];
-
-  constructor() {
-    this.ahorroForm = this.fb.group({
-      nombreAhorro: ['', [Validators.required, Validators.minLength(3)]],
-      descripcionAhorro: ['', [Validators.required, Validators.minLength(5)]],
-      ahorroMensual: [null, [Validators.required, Validators.min(1)]],
-      meses: [null, [Validators.required, Validators.min(1)]],
-      meta: [null, [Validators.required, Validators.min(1)]],
-    });
-  }
+  ahorros: AhorroRecordMysql[] = [];
 
   ngOnInit(): void {
-    const authInitSub = this.authService.authInitialized$.subscribe(async (initialized) => {
-      this.ngZone.run(async () => {
-        if (!initialized) {
-          return;
-        }
-
-        const user = this.authService.currentUser;
-
+    this.subscriptions.add(
+      this.authService.user$.subscribe(async (user) => {
         if (!user) {
           this.ahorros = [];
           this.loadingAhorros = false;
@@ -63,10 +62,8 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
         }
 
         await this.cargarAhorros();
-      });
-    });
-
-    this.subscriptions.add(authInitSub);
+      }),
+    );
   }
 
   ngOnDestroy(): void {
@@ -74,10 +71,8 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
   }
 
   async onSubmit(): Promise<void> {
-    this.ngZone.run(() => {
-      this.successMessage = '';
-      this.errorMessage = '';
-    });
+    this.successMessage = '';
+    this.errorMessage = '';
 
     if (this.ahorroForm.invalid) {
       this.ahorroForm.markAllAsTouched();
@@ -86,81 +81,37 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
 
     const user = this.authService.currentUser;
 
-    if (!user) {
-      this.ngZone.run(() => {
-        this.errorMessage = 'Debes iniciar sesión para guardar un ahorro.';
-      });
+    if (!user?.uid || !user.email) {
+      this.errorMessage = 'Debes iniciar sesion para guardar un ahorro.';
       return;
     }
 
-    this.ngZone.run(() => {
-      this.loading = true;
-    });
+    this.loading = true;
 
     try {
-      const nombreAhorro = String(this.ahorroForm.value.nombreAhorro).trim();
-      const descripcionAhorro = String(this.ahorroForm.value.descripcionAhorro).trim();
-      const ahorroMensual = Number(this.ahorroForm.value.ahorroMensual);
-      const meses = Number(this.ahorroForm.value.meses);
-      const meta = Number(this.ahorroForm.value.meta);
-
-      const ahorroTotal = ahorroMensual * meses;
-      const cumplioMeta = ahorroTotal >= meta;
-      const diferenciaMeta = ahorroTotal - meta;
+      const ahorro = this.construirPayload(user.uid, user.displayName, user.email);
 
       if (this.modoEdicion && this.ahorroEditandoId !== null) {
-        await this.mysqlAhorroService.actualizarAhorro(this.ahorroEditandoId, {
-          uid: user.uid,
-          nombre: nombreAhorro,
-          descripcion: descripcionAhorro,
-          ahorro_mensual: ahorroMensual,
-          meses,
-          meta,
-          ahorro_total: ahorroTotal,
-          cumplio_meta: cumplioMeta,
-          diferencia_meta: diferenciaMeta,
+        await this.mysqlAhorroService.actualizarAhorro({
+          ...ahorro,
+          id: this.ahorroEditandoId,
         });
 
-        this.ngZone.run(() => {
-          this.successMessage = 'Ahorro actualizado correctamente.';
-        });
-
-        this.cancelarEdicion();
+        this.successMessage = 'Ahorro actualizado correctamente.';
+        this.cancelarEdicion(false);
       } else {
-        await this.mysqlAhorroService.crearAhorro({
-          uid: user.uid,
-          nombre: nombreAhorro,
-          descripcion: descripcionAhorro,
-          ahorro_mensual: ahorroMensual,
-          meses,
-          meta,
-          ahorro_total: ahorroTotal,
-          cumplio_meta: cumplioMeta,
-          diferencia_meta: diferenciaMeta,
-        });
-
-        this.ngZone.run(() => {
-          this.successMessage = 'Ahorro guardado correctamente.';
-          this.ahorroForm.reset({
-            nombreAhorro: '',
-            descripcionAhorro: '',
-            ahorroMensual: null,
-            meses: null,
-            meta: null,
-          });
-        });
+        await this.mysqlAhorroService.crearAhorro(ahorro);
+        this.successMessage = 'Ahorro guardado correctamente.';
+        this.resetFormulario();
       }
 
       await this.cargarAhorros();
     } catch (error) {
-      console.error('Error al guardar/actualizar ahorro:', error);
-      this.ngZone.run(() => {
-        this.errorMessage = 'Ocurrió un error al procesar el ahorro.';
-      });
+      console.error('Error al guardar el ahorro:', error);
+      this.errorMessage = 'Ocurrio un error al procesar el ahorro.';
     } finally {
-      this.ngZone.run(() => {
-        this.loading = false;
-      });
+      this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -177,10 +128,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
     try {
       this.loadingAhorros = true;
       this.errorMessage = '';
-      this.cdr.detectChanges();
-
-      const ahorros = await this.mysqlAhorroService.obtenerAhorros(user.uid);
-      this.ahorros = ahorros;
+      this.ahorros = await this.mysqlAhorroService.obtenerAhorros(user.uid);
     } catch (error) {
       console.error('Error al cargar ahorros:', error);
       this.ahorros = [];
@@ -191,17 +139,16 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  editarAhorro(ahorro: AhorroMysql): void {
+  editarAhorro(ahorro: AhorroRecordMysql): void {
     this.modoEdicion = true;
     this.ahorroEditandoId = ahorro.id ?? null;
-
     this.successMessage = '';
     this.errorMessage = '';
 
     this.ahorroForm.patchValue({
-      nombreAhorro: ahorro.nombre,
-      descripcionAhorro: ahorro.descripcion,
-      ahorroMensual: ahorro.ahorro_mensual,
+      nombreAhorro: ahorro.nombreAhorro,
+      descripcionAhorro: ahorro.descripcionAhorro,
+      ahorroMensual: ahorro.ahorroMensual,
       meses: ahorro.meses,
       meta: ahorro.meta,
     });
@@ -209,29 +156,28 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
     this.scrollAlFormulario();
   }
 
-  cancelarEdicion(): void {
+  cancelarEdicion(limpiarMensajes = true): void {
     this.modoEdicion = false;
     this.ahorroEditandoId = null;
-    this.successMessage = '';
-    this.errorMessage = '';
 
-    this.ahorroForm.reset({
-      nombreAhorro: '',
-      descripcionAhorro: '',
-      ahorroMensual: null,
-      meses: null,
-      meta: null,
-    });
+    if (limpiarMensajes) {
+      this.successMessage = '';
+      this.errorMessage = '';
+    }
+
+    this.resetFormulario();
   }
 
-  async eliminarAhorro(ahorro: AhorroMysql): Promise<void> {
-    if (!ahorro.id) {
+  async eliminarAhorro(ahorro: AhorroRecordMysql): Promise<void> {
+    const user = this.authService.currentUser;
+
+    if (!ahorro.id || !user?.uid) {
       this.errorMessage = 'No se pudo identificar el ahorro a eliminar.';
       return;
     }
 
     const confirmado = window.confirm(
-      `¿Seguro que deseas eliminar el ahorro "${ahorro.nombre}"?`,
+      `Seguro que deseas eliminar el ahorro "${ahorro.nombreAhorro}"?`,
     );
 
     if (!confirmado) {
@@ -243,7 +189,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       this.successMessage = '';
       this.errorMessage = '';
 
-      await this.mysqlAhorroService.eliminarAhorro(ahorro.id);
+      await this.mysqlAhorroService.eliminarAhorro(ahorro.id, user.uid);
 
       if (this.modoEdicion && this.ahorroEditandoId === ahorro.id) {
         this.cancelarEdicion();
@@ -253,9 +199,10 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       await this.cargarAhorros();
     } catch (error) {
       console.error('Error al eliminar ahorro:', error);
-      this.errorMessage = 'Ocurrió un error al eliminar el ahorro.';
+      this.errorMessage = 'Ocurrio un error al eliminar el ahorro.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
@@ -266,6 +213,43 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
         block: 'start',
       });
     }
+  }
+
+  private construirPayload(
+    uid: string,
+    displayName: string | null,
+    email: string,
+  ): AhorroRecordMysql {
+    const nombreAhorro = String(this.ahorroForm.value.nombreAhorro).trim();
+    const descripcionAhorro = String(this.ahorroForm.value.descripcionAhorro).trim();
+    const ahorroMensual = Number(this.ahorroForm.value.ahorroMensual);
+    const meses = Number(this.ahorroForm.value.meses);
+    const meta = Number(this.ahorroForm.value.meta);
+    const ahorroTotal = ahorroMensual * meses;
+
+    return {
+      uid,
+      displayName: displayName?.trim() || 'Usuario sin nombre',
+      email,
+      nombreAhorro,
+      descripcionAhorro,
+      ahorroMensual,
+      meses,
+      meta,
+      ahorroTotal,
+      cumplioMeta: ahorroTotal >= meta,
+      diferenciaMeta: ahorroTotal - meta,
+    };
+  }
+
+  private resetFormulario(): void {
+    this.ahorroForm.reset({
+      nombreAhorro: '',
+      descripcionAhorro: '',
+      ahorroMensual: null,
+      meses: null,
+      meta: null,
+    });
   }
 
   get nombreAhorroControl() {

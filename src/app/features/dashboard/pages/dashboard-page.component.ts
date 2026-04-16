@@ -1,12 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BaseChartDirective } from 'ng2-charts';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ChartConfiguration, ChartType } from 'chart.js';
+import { BaseChartDirective } from 'ng2-charts';
+import { Subscription } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import {
+  DashboardReporte,
   MysqlAhorroService,
-  DashboardReporte
 } from '../../../core/services/mysql-ahorro.service';
 
 @Component({
@@ -14,11 +15,12 @@ import {
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   templateUrl: './dashboard-page.component.html',
-  styleUrl: './dashboard-page.component.css'
+  styleUrl: './dashboard-page.component.css',
 })
-export class DashboardPageComponent implements OnInit {
-  private authService = inject(AuthService);
-  private mysqlAhorroService = inject(MysqlAhorroService);
+export class DashboardPageComponent implements OnInit, OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly mysqlAhorroService = inject(MysqlAhorroService);
+  private readonly subscriptions = new Subscription();
 
   loading = true;
   errorMessage = '';
@@ -31,103 +33,122 @@ export class DashboardPageComponent implements OnInit {
 
   barChartType: ChartType = 'bar';
   pieChartType: ChartType = 'pie';
-  lineChartType: ChartType = 'line';
 
   barChartData: ChartConfiguration<'bar'>['data'] = {
     labels: [],
     datasets: [
       {
         data: [],
-        label: 'Ahorro total'
+        label: 'Ahorro total',
       },
       {
         data: [],
-        label: 'Meta'
-      }
-    ]
+        label: 'Meta',
+      },
+    ],
   };
 
   pieChartData: ChartConfiguration<'pie'>['data'] = {
     labels: ['Metas cumplidas', 'Metas pendientes'],
     datasets: [
       {
-        data: [0, 0]
-      }
-    ]
+        data: [0, 0],
+      },
+    ],
   };
 
-  lineChartData: ChartConfiguration<'line'>['data'] = {
-    labels: [],
-    datasets: [
-      {
-        data: [],
-        label: 'Ahorro total'
-      }
-    ]
-  };
+  ngOnInit(): void {
+    this.subscriptions.add(
+      this.authService.user$.subscribe(async (user) => {
+        if (!user) {
+          this.limpiarDashboard();
+          this.errorMessage = 'No hay usuario autenticado.';
+          this.loading = false;
+          return;
+        }
 
-  async ngOnInit(): Promise<void> {
-    await this.cargarDashboard();
+        await this.cargarDashboard(user.uid);
+      }),
+    );
+
+    this.subscriptions.add(
+      this.mysqlAhorroService.ahorroActualizado$.subscribe(async () => {
+        const user = this.authService.currentUser;
+
+        if (user) {
+          await this.cargarDashboard(user.uid);
+        }
+      }),
+    );
   }
 
-  async cargarDashboard(): Promise<void> {
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  async cargarDashboard(uid: string): Promise<void> {
     try {
       this.loading = true;
       this.errorMessage = '';
 
-      const user = this.authService.currentUser;
-
-      if (!user) {
-        this.errorMessage = 'No hay usuario autenticado.';
-        return;
-      }
-
-      const reporte: DashboardReporte =
-        await this.mysqlAhorroService.obtenerReporteDashboard(user.uid);
-
-      this.totalRegistros = Number(reporte.resumen.total_registros || 0);
-      this.totalAhorrado = Number(reporte.resumen.total_ahorrado || 0);
-      this.metasCumplidas = Number(reporte.resumen.metas_cumplidas || 0);
-      this.metasPendientes = Number(reporte.resumen.metas_pendientes || 0);
-      this.ultimoRegistro = reporte.resumen.ultimo_registro;
-
-      this.barChartData = {
-        labels: reporte.detalle.map(item => item.nombre),
-        datasets: [
-          {
-            data: reporte.detalle.map(item => Number(item.ahorro_total || 0)),
-            label: 'Ahorro total'
-          },
-          {
-            data: reporte.detalle.map(item => Number(item.meta || 0)),
-            label: 'Meta'
-          }
-        ]
-      };
-
-      this.pieChartData = {
-        labels: ['Metas cumplidas', 'Metas pendientes'],
-        datasets: [
-          {
-            data: [this.metasCumplidas, this.metasPendientes]
-          }
-        ]
-      };
-
-      this.lineChartData = {
-        labels: reporte.detalle.map(item => item.nombre),
-        datasets: [
-          {
-            data: reporte.detalle.map(item => Number(item.ahorro_total || 0)),
-            label: 'Crecimiento de ahorros'
-          }
-        ]
-      };
+      const reporte = await this.mysqlAhorroService.obtenerReporteDashboard(uid);
+      this.aplicarReporte(reporte);
     } catch (error) {
       console.error('Error al cargar dashboard:', error);
+      this.limpiarDashboard();
       this.errorMessage = 'No fue posible cargar el dashboard.';
     } finally {
       this.loading = false;
     }
+  }
+
+  private aplicarReporte(reporte: DashboardReporte): void {
+    this.totalRegistros = Number(reporte.resumen.total_registros || 0);
+    this.totalAhorrado = Number(reporte.resumen.total_ahorrado || 0);
+    this.metasCumplidas = Number(reporte.resumen.metas_cumplidas || 0);
+    this.metasPendientes = Number(reporte.resumen.metas_pendientes || 0);
+    this.ultimoRegistro = reporte.resumen.ultimo_registro;
+
+    this.barChartData = {
+      labels: reporte.detalle.map((item) => item.nombreAhorro),
+      datasets: [
+        {
+          data: reporte.detalle.map((item) => Number(item.ahorroTotal || 0)),
+          label: 'Ahorro total',
+        },
+        {
+          data: reporte.detalle.map((item) => Number(item.meta || 0)),
+          label: 'Meta',
+        },
+      ],
+    };
+
+    this.pieChartData = {
+      labels: ['Metas cumplidas', 'Metas pendientes'],
+      datasets: [
+        {
+          data: [this.metasCumplidas, this.metasPendientes],
+        },
+      ],
+    };
+  }
+
+  private limpiarDashboard(): void {
+    this.totalRegistros = 0;
+    this.totalAhorrado = 0;
+    this.metasCumplidas = 0;
+    this.metasPendientes = 0;
+    this.ultimoRegistro = null;
+    this.barChartData = {
+      labels: [],
+      datasets: [
+        { data: [], label: 'Ahorro total' },
+        { data: [], label: 'Meta' },
+      ],
+    };
+    this.pieChartData = {
+      labels: ['Metas cumplidas', 'Metas pendientes'],
+      datasets: [{ data: [0, 0] }],
+    };
   }
 }

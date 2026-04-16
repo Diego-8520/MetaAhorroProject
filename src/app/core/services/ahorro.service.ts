@@ -1,73 +1,48 @@
-//Este servicio se encarga de manejar las operaciones relacionadas con los registros de ahorro, como crear, leer, actualizar y eliminar registros en Firestore.
+import { Injectable, inject } from '@angular/core';
 
-import { Injectable } from '@angular/core';
-import {
-  addDoc,
-  collection,
-  doc,
-  deleteDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from 'firebase/firestore';
-
-import { db } from '../firebase/firebase.config';
 import { AhorroRecord } from '../models/ahorro-record.model';
-import { Subject } from 'rxjs';
-
+import { MysqlAhorroService } from './mysql-ahorro.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AhorroService {
-  private readonly collectionName = 'ahorros';
-  private ahorroActualizadoSubject = new Subject<void>();
-ahorroActualizado$ = this.ahorroActualizadoSubject.asObservable();
+  private readonly mysqlAhorroService = inject(MysqlAhorroService);
 
-  constructor() {}
+  readonly ahorroActualizado$ = this.mysqlAhorroService.ahorroActualizado$;
 
   async crearAhorro(ahorro: Omit<AhorroRecord, 'id' | 'createdAt'>): Promise<void> {
-    const ahorrosRef = collection(db, this.collectionName);
-
-    await addDoc(ahorrosRef, {
+    await this.mysqlAhorroService.crearAhorro({
       ...ahorro,
-      createdAt: serverTimestamp(),
+      id: undefined,
     });
-    this.ahorroActualizadoSubject.next();
   }
 
   async obtenerAhorrosPorUsuario(uid: string): Promise<AhorroRecord[]> {
-    const ahorrosRef = collection(db, this.collectionName);
+    const ahorros = await this.mysqlAhorroService.obtenerAhorros(uid);
 
-    const q = query(ahorrosRef, where('uid', '==', uid), orderBy('createdAt', 'desc'));
-
-    const querySnapshot = await getDocs(q);
-
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as AhorroRecord[];
+    return ahorros.map((ahorro) => ({
+      ...ahorro,
+      id: ahorro.id?.toString(),
+      createdAt: ahorro.createdAt ?? null,
+    }));
   }
 
   async actualizarAhorro(
     id: string,
-    ahorro: Omit<AhorroRecord, 'id' | 'uid' | 'displayName' | 'email' | 'createdAt'>,
+    ahorro: Omit<AhorroRecord, 'id' | 'createdAt'>,
   ): Promise<void> {
-    const ahorroDocRef = doc(db, this.collectionName, id);
-
-    await updateDoc(ahorroDocRef, {
+    await this.mysqlAhorroService.actualizarAhorro({
       ...ahorro,
+      id: Number(id),
     });
   }
 
-  async eliminarAhorro(id: string): Promise<void> {
-    const ahorroDocRef = doc(db, this.collectionName, id);
-    await deleteDoc(ahorroDocRef);
-    
+  async eliminarAhorro(id: string, uid = ''): Promise<void> {
+    if (!uid) {
+      throw new Error('Se requiere uid para eliminar un ahorro en MySQL.');
+    }
+
+    await this.mysqlAhorroService.eliminarAhorro(Number(id), uid);
   }
 }
-
-
