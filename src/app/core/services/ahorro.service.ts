@@ -43,6 +43,6 @@ export class AhorroService {
       throw new Error('Se requiere uid para eliminar un ahorro en MySQL.');
     }
 
-    await this.mysqlAhorroService.eliminarAhorro(Number(id), uid);
+    await this.mysqlAhorroService.eliminarAhorro(id);
   }
 }

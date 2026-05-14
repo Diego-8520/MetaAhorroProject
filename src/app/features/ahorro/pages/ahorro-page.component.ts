@@ -35,7 +35,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
   formularioAhorro!: ElementRef;
 
   modoEdicion = false;
-  ahorroEditandoId: number | null = null;
+  ahorroEditandoId: string | number | null = null;
 
   ahorroForm: FormGroup = this.fb.group({
     nombreAhorro: ['', [Validators.required, Validators.minLength(3)]],
@@ -189,7 +189,7 @@ export class AhorroPageComponent implements OnInit, OnDestroy {
       this.successMessage = '';
       this.errorMessage = '';
 
-      await this.mysqlAhorroService.eliminarAhorro(ahorro.id, user.uid);
+      await this.mysqlAhorroService.eliminarAhorro(ahorro.id);
 
       if (this.modoEdicion && this.ahorroEditandoId === ahorro.id) {
         this.cancelarEdicion();
